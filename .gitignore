@@ -1,6 +1,9 @@
 build
 .vscode
+*.swp
 
 lab_2/artifacts
 lab_2/clean
 lab_2/injected
+
+lab_3/sandbox
